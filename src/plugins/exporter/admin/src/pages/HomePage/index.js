@@ -1,10 +1,4 @@
 // @ts-nocheck
-/*
- *
- * HomePage
- *
- */
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import {
@@ -40,42 +34,37 @@ const HomePage = () => {
     setFormat(value);
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:1337/exporter/create', {
-        data: formData
+        data: formData,
+        format: format
+      }, {
+        responseType: 'blob'
       });
+
       if (response.status === 200) {
-        setSuccessMessage('Formulario enviado con éxito.');
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `data.${format === 'csv' ? 'csv' : 'json'}`);
+        document.body.appendChild(link);
+        link.click();
+
+        setSuccessMessage('Form submitted and file downloaded successfully.');
         setFormData({ name: '', email: '', message: '' });
+      } else {
+        setErrorMessage('The request could not be processed.');
       }
     } catch (error) {
-      setErrorMessage('Hubo un error al enviar el formulario. Inténtelo de nuevo.');
+      if (error.response && error.response.data) {
+        setErrorMessage(error.response.data.message || 'There was an error submitting the form.');
+      } else {
+        setErrorMessage('There was an error submitting the form.');
+      }
     }
   };
-
-  const handleDownload = async () => {
-    try {
-      const response = await axios.post('http://localhost:1337/exporter/export-data', {
-        format
-      }, {
-        responseType: 'blob' // Para manejar archivos (CSV o JSON)
-      });
-
-      // Crear un enlace para descargar el archivo
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `data.${format === 'csv' ? 'csv' : 'json'}`);
-      document.body.appendChild(link);
-      link.click();
-    } catch (error) {
-      setErrorMessage('Hubo un error al descargar los datos.');
-    }
-  };
-
 
   return (
     <Box padding={8}>
@@ -100,32 +89,30 @@ const HomePage = () => {
             required
           />
           <TextInput
-            type="message"
             name="message"
             label="Message"
             value={formData.message}
             onChange={handleInputChange}
             required
           />
-          <Button type="submit" fullWidth>
-            Enviar
-          </Button>
-
           <SingleSelect
             label="Seleccione el formato"
             placeholder="Seleccionar formato"
             value={format}
-            onChange={handleFormatChange}
+            onChange={handleFormatChange} // Directamente pasando la función sin evento
             required
           >
             <SingleSelectOption value="csv">CSV</SingleSelectOption>
             <SingleSelectOption value="json">JSON</SingleSelectOption>
           </SingleSelect>
-          <Button type="button" onClick={handleDownload} fullWidth>
-            Download
+          <Button type="submit" fullWidth>
+            Enviar
           </Button>
         </Stack>
       </form>
+
+      {successMessage && <Typography variant="beta" color="success">{successMessage}</Typography>}
+      {errorMessage && <Typography variant="beta" color="danger">{errorMessage}</Typography>}
     </Box>
   );
 };

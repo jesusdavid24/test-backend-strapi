@@ -26,13 +26,4 @@ module.exports = [
       auth: false,
     },
   },
-  {
-    method: 'POST',
-    path: '/export-data',
-    handler: 'exporter.exportData',
-    config: {
-      policies: [],
-      auth: false,
-    },
-  },
 ];
